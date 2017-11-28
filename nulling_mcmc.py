@@ -139,7 +139,11 @@ class NullingPulsar():
             return -np.inf
         # just the prior on the OFF distribution
         # a dirichlet prior on the weights is flat as long as the sum is 1
-        return -0.5*((means[0]-self.mean_off)/self.mean_off_err)**2-0.5*((stds[0]-self.std_off)/self.std_off_err)**2
+        # this should only be for when M>1: when M=1 we don't constrain this
+        if self.M>1:
+            return -0.5*((means[0]-self.mean_off)/self.mean_off_err)**2-0.5*((stds[0]-self.std_off)/self.std_off_err)**2
+        else:
+            return 0
 
     def BIC(self, means, stds, weights):
         """
