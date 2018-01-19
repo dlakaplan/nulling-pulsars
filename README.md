@@ -30,3 +30,23 @@ The Akaike and Bayesian information criteria (AIC and BIC) can also be calculate
 AIC=NP.AIC(means_fit,stds_fit,weights_fit)
 BIC=NP.BIC(means_fit,stds_fit,weights_fit)
 ```
+
+The [Kolmogorov-Smirnov](https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test) test can then be computed.  First, generate an object from which the cumulative distribution function (CDF) for the mixture can be calculated.  We provide an object like a `scipy.stats` distribution that has methods for the CDF, as well as probability distribution function (PDF) and random variable (RV) generation:
+```python
+import scipy.stats
+np_dist=nulling_mcmc.MultiGaussian(means_fit,stds_fit,weights_fit)
+print scipy.stats.kstest(on,np_dist.cdf)
+```
+which will print the K-S test statistic as well as the associated p-value.  The [Anderson-Darling](https://en.wikipedia.org/wiki/Anderson–Darling_test) is more sensitive, but has the disadvantage the p-values have to be computed empirically for each mixture.  This can also be done.  First we simulate 1000 data-sets drawn from our best-fit distribution and compute the test statistic for each
+```
+Nsim=1000
+A2sim=np.zeros(Nsim)
+ysim=np_dist.rvs((Nsim,len(on)))
+for j in xrange((Nsim)):
+    A2sim[j]=nulling_mcmc.anderson_darling(ysim[j], np_dist.cdf)
+```
+Then we compare against the value for the actual data and compute a p-value:
+```python
+print (A2sim>nulling_mcmc.anderson_darling(on, np_dist.cdf)).sum()/float(Nsim)
+```
+
