@@ -13,8 +13,87 @@ def gaussian(x, params):
     mean,std=params
     return np.exp(-(x-mean)**2/2/std**2)/np.sqrt(2*np.pi*std**2)
 
+def anderson_darling(y, CDF):
+    """
+    anderson_darling(y, CDF)
 
+    returns the anderson darling test statistic A^2
+    for the data y using callable CDF
+    https://en.wikipedia.org/wiki/Anderson–Darling_test
+    """
+    
+    y=np.sort(y)
+    n=len(y)
+    i=np.arange(len(y))
+    S=((((2*i+1)/float(n))*(np.log(CDF(y[i]))+np.log(1-CDF(y[n-i-1]))))).sum()
+    A2=-n-S
+    return A2
 
+class MultiGaussian:
+    """
+    MultiGaussian
+    an object like a scipy.stats distribution for a weighted sum of Gaussians
+
+    z=MultiGaussian(means,stds,weights)
+
+    methods:
+    z.pdf(x)
+    z.cdf(x)
+
+    evaluate the pdf() and cdf() at x
+
+    z.rvs(size)
+
+    generate random variables according to the distribution of specified size
+
+    """
+
+    def __init__(self, means, stds, weights):
+        """
+        z=MultiGaussian(means,stds,weights)
+        """
+
+        self.M=len(means)
+        self.weights=weights
+        self.p=[]
+        for i in xrange(self.M):
+            self.p.append(scipy.stats.norm(loc=means[i],
+                                           scale=stds[i]))
+
+    def pdf(self, x):
+        """
+        pdf(self, x)
+        return probability distribution function evaluated at x
+        """
+        y=np.zeros_like(x)
+        for i in xrange(self.M):
+            y+=self.weights[i]*self.p[i].pdf(x)
+        return y
+
+    def cdf(self, x):
+        """
+        cdf(self, x)
+        return cumulative distribution function evaluated at x
+        """
+
+        y=np.zeros_like(x)
+        for i in xrange(self.M):
+            y+=self.weights[i]*self.p[i].cdf(x)
+        return y
+
+    def rvs(self, size=(1,)):
+        """
+        rvs(self, size=(1,))
+        generate random variables of specified size
+        """
+        w=scipy.stats.uniform.rvs(size=size)
+        y=[]
+        for i in xrange(self.M):
+            y.append(self.p[i].rvs(size=size))
+        Y=y[0]
+        for i in xrange(1,self.M):
+            Y[w>self.weights[:i].sum()]=y[i][w>self.weights[:i].sum()]
+        return Y
 
 
 class NullingPulsar():
@@ -166,6 +245,7 @@ class NullingPulsar():
         the lower the better
         """
         return -2*(self.logprior(means,stds,weights)+self.loglike(means,stds,weights))+(3*self.M-1)*2
+
 
     def pdf(self, means, stds, weights, x):
         """
