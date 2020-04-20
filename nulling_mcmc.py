@@ -335,12 +335,11 @@ class NullingPulsar:
         niter=500,
         ninit=50,
         nthreads=4,
-        printinterval=50,
     ):
         """
         means_fit, means_err, stds_fit, stds_err, weights_fit, weights_err, samples, lnprobs=fit_mcmc(
         means=None, stds=None, weights=None,
-                                  nwalkers=40, niter=500, ninit=50, nthreads=4, printinterval=50)
+                                  nwalkers=40, niter=500, ninit=50, nthreads=4)
         means, stds, weights are the initial values to use for the fits
         if any of these is None, then computes starting values using the scikit-learn GMM routine
         
@@ -348,7 +347,6 @@ class NullingPulsar:
         niter is number of fit iterations (total chains = nwalkers * niter)
         ninit is number of iterations for burn-in
         nthreads is for multi-threading
-        if printinterval>0, will print status update every printinterval iterations
 
         """
         ndim = self.n_parameters
@@ -371,23 +369,6 @@ class NullingPulsar:
         sampler = emcee.EnsembleSampler(nwalkers, ndim, self, threads=nthreads)
 
         sampler.run_mcmc(p0, niter, progress=True)
-
-        """
-        # run for ninit iterations for burn-in
-        #pos, prob, state = sampler.run_mcmc(p0, ninit)
-        pos, prob, _, state = sampler.run_mcmc(p0, ninit)        
-        sampler.reset()
-
-    
-        j=0
-        for result in sampler.sample(pos, iterations=niter):
-            if printinterval is not None and printinterval>0:
-                if j % printinterval==0:
-                    print('iteration %d/%d' % (j,niter))
-            j+=1
-        samples = sampler.chain.reshape((-1, ndim))
-        lnprobs=sampler.lnprobability.reshape((-1,))
-        """
 
         # reject ninit samples from burn-in
         samples = sampler.get_chain(discard=ninit, flat=True)
